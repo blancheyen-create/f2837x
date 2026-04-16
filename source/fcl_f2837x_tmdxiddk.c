@@ -1268,19 +1268,20 @@ void main(void)
            if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
            if(rc1.SetpointValue <= 0.005f) //Change SetpointValue into a conditional statement
            {
+               enableFlag = 0;   //Safely disconnect the power (do this first).
                VqTesting  = 0.0f;         // Voltage to zero
-               IqRef = 0.0f; // Incidentally clear the current
-               rg1.Out = 0.0f;           // To zero the angle
+               //IqRef = 0.0f; // Incidentally clear the current(Cancel)
+               //rg1.Out = 0.0f;           // To zero the angle(Cancel)
+               rc1.SetpointValue = 0.0f;//Reset the status (earlier).
                runMotor   = MOTOR_STOP;   // Switch state to stop
-               enableFlag = 0;
-               rc1.SetpointValue = 0.0f;//Ensure that rc1 can start climbing from 0 again on the next startup.
-               // rg1.Freq = 0.0f;     // Stop angle from increasing
+               // rg1.Freq = 0.0f;     // Stop angle from increasing(Cancel)
            }// If it hasn't dropped to 0 yet, the PC will continue running the loop, gradually slowing down using rc1.
-           /*else
+           else
            {
-               // 讓減速過程也遵循 V/f 曲線，馬達才會平穩地「慢下來」而不是直接卡死
+               // By ensuring that the deceleration process also follows the V/f curve, the motor will smoothly "slowly decelerate" instead of suddenly stalling.
                VqTesting = (rc1.SetpointValue * V_f_Ratio) + V_offset;
-           }*/
+               rg1.Freq = rc1.SetpointValue; //new
+           }
         }
         //===========================================================
         // State machine entry & exit point
