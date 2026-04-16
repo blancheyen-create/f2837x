@@ -1244,7 +1244,7 @@ void main(void)
               rc1.SetpointValue = 0; // initial
               rc1.RampDelayMax = 10; // --- Manually add delay to slow accel ---
               rc1.EqualFlag = 0;     // Clear the arrival flag and begin acceleration
-              //rg1.Freq = speedRef; // Feed ref speed to ramp gen
+              //rg1.Freq = speedRef; // Feed ref speed to ramp gen(Cancel)
               lsw = ENC_WAIT_FOR_INDEX; // Force lsw to angle reading mode
            }
            else if (rc1. TargetValue == 0.0f) rc1.TargetValue = speedRef;//(new)
