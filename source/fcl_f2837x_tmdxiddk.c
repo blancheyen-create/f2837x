@@ -1241,14 +1241,14 @@ void main(void)
                speedRef = 0.12f;
                rc1.TargetValue = speedRef;
                rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.
-               rc1.RampDelayMax = 10; // --- Manually add delay to slow accel
+               rc1.RampDelayMax = 5; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
                enableFlag = 1; // Turn on the power
             }
 
             // During operation: Directly apply a frequency and a fixed voltage (without considering dynamic V/f initially to eliminate the possibility of fluctuations).
             if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
-            rg1.Freq = speedRef;
+            rg1.Freq = rc1.SetpointValue;
             v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
             if(v_calc > 0.4f) v_calc=0.4f;//protection mechanism
             else if(v_calc < 0.0f) v_calc=0.0f;//protection mechanism
@@ -1265,7 +1265,7 @@ void main(void)
             {
                 if(v_calc > 0.4f) v_calc=0.4f;
                 VqTesting  = v_calc;
-                rg1.Freq = speedRef;
+                rg1.Freq = rc1.SetpointValue;
                 IqRef = rc1.SetpointValue;    //Display the value synchronously
             }
             else
