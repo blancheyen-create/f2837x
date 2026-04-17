@@ -1253,6 +1253,7 @@ void main(void)
             if(v_calc > 0.4f) v_calc=0.4f;//protection mechanism
             else if(v_calc < 0.0f) v_calc=0.0f;//protection mechanism
             VqTesting = v_calc; // Give a specific starting voltage by temporary value
+            IqRef = rc1.SetpointValue;    // By the way, update IqRef
          }
          else // Switch OFF: Stop immediately
          {
@@ -1260,11 +1261,12 @@ void main(void)
             rc1.TargetValue = 0.0f;
             if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
             v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
-            if(v_calc > 0.05f)
+            if(v_calc > 0.02f)
             {
                 if(v_calc > 0.4f) v_calc=0.4f;
                 VqTesting  = v_calc;
                 rg1.Freq = speedRef;
+                IqRef = rc1.SetpointValue;    //Display the value synchronously
             }
             else
             {
