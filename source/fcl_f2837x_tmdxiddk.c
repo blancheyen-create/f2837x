@@ -113,8 +113,8 @@ HALL_Handle    hallHandle;     // HALL module control handle
 HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
-float32 V_f_Ratio = 1.2f; // Add V/f definition at the beginning of the main file
-float32 V_offset  = 0.01f;     // Provide a small initial thrust.
+float32 V_f_Ratio = 1.5f; // Add V/f definition at the beginning of the main file
+float32 V_offset  = 0.009f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
 // Define struct type first (paste right before main)
@@ -1238,25 +1238,44 @@ void main(void)
                EDIS;
                clearTripFlagDMC = 1;
 
-               speedRef = 0.15f;
+               speedRef = 0.12f;
                rc1.TargetValue = speedRef;
                rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.
-
+               rc1.RampDelayMax = 10; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
                enableFlag = 1; // Turn on the power
             }
 
             // During operation: Directly apply a frequency and a fixed voltage (without considering dynamic V/f initially to eliminate the possibility of fluctuations).
-            rg1.Freq = 0.15f;
-            VqTesting = 0.19f; // Give a specific starting voltage
+            if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
+            rg1.Freq = speedRef;
+            v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
+            if(v_calc > 0.4f) v_calc=0.4f;//protection mechanism
+            else if(v_calc < 0.0f) v_calc=0.0f;//protection mechanism
+            VqTesting = v_calc; // Give a specific starting voltage by temporary value
          }
          else // Switch OFF: Stop immediately
          {
-            enableFlag = 0;   // Turn off the Power immediately
-            VqTesting  = 0.0f;
-            rg1.Freq   = 0.0f;
-            rc1.SetpointValue = 0.0f;
-            runMotor   = MOTOR_STOP;
+            speedRef = 0.0f;           // zero the speed
+            rc1.TargetValue = 0.0f;
+            if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
+            v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
+            if(v_calc > 0.05f)
+            {
+                if(v_calc > 0.4f) v_calc=0.4f;
+                VqTesting  = v_calc;
+                rg1.Freq = speedRef;
+            }
+            else
+            {
+                v_calc=0.0f;//protection mechanism
+                VqTesting  = v_calc;
+                rc1.SetpointValue = 0.0f;
+                rg1.Freq   = 0.0f;
+                runMotor   = MOTOR_STOP;
+                enableFlag = 0;   // Turn off the power last.
+            }
+
          }
         //===========================================================
         // State machine entry & exit point
