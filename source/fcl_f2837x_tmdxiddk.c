@@ -114,7 +114,7 @@ HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
 float32 V_f_Ratio = 1.5f; // Add V/f definition at the beginning of the main file
-float32 V_offset  = 0.009f;     // Provide a small initial thrust.
+float32 V_offset  = 0.001254f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
 // Define struct type first (paste right before main)
@@ -1231,19 +1231,19 @@ void main(void)
         //===========================================================
         if (GpioDataRegs.GPBDAT.bit.GPIO45 == 1) // Switch at [1]: Start motor
         {
-            if(enableFlag == 0) // Initialize only on the first entry
+            if(runMotor == MOTOR_STOP || speedRef == 0.0f) // Initialize only on the first entry(Some additions, now using motor_run and speedRef for identification)
             {
                EALLOW;
                EPwm1Regs.TZCLR.all = 0x00FF;
                EDIS;
                clearTripFlagDMC = 1;
-
-               speedRef = 0.12f;
-               rc1.TargetValue = speedRef;
-               rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.
-               rc1.RampDelayMax = 5; // --- Manually add delay to slow accel
+               //run_mode=1;
+               speedRef = 0.1258f;
+               rc1.TargetValue = speedRef;//(Removed because the LV1-specific function has been declared.)
+               //rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.(Remove this out; if you switch quickly, it will climb directly from the "residual speed" for a smoother transition.)
+               rc1.RampDelayMax = 100; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
-               enableFlag = 1; // Turn on the power
+               if(!enableFlag) enableFlag = 1; // Turn on the power(Some additions; adjustment should be only necessary if the software control flag has been cleared.)
             }
 
             // During operation: Directly apply a frequency and a fixed voltage (without considering dynamic V/f initially to eliminate the possibility of fluctuations).
@@ -1257,22 +1257,26 @@ void main(void)
          }
          else // Switch OFF: Stop immediately
          {
-            speedRef = 0.0f;           // zero the speed
-            rc1.TargetValue = 0.0f;
+            speedRef = 0.0f; // to allow ramp-down calculation
+            //rc1.TargetValue = 0.0f;//(removed)
             if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
             v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
-            if(v_calc > 0.02f)
+            //run_mode=0;
+            //if(v_calc > 0.02f)(deprecated)
+            //{
+            //}
+            if(v_calc > 0.4f) v_calc=0.4f;//(Promoted)
+            if(rc1.SetpointValue > 0.005f)//We've switched to using rc1.SetpointValue for the determination and simultaneously lowered the lower bound (new)
             {
-                if(v_calc > 0.4f) v_calc=0.4f;
-                VqTesting  = v_calc;
-                rg1.Freq = rc1.SetpointValue;
-                IqRef = rc1.SetpointValue;    //Display the value synchronously
+                VqTesting  = v_calc;//(relocated)
+                rg1.Freq = rc1.SetpointValue;//(relocated)
+                IqRef = rc1.SetpointValue;    //Display the value synchronously//(relocated)
             }
             else
             {
-                v_calc=0.0f;//protection mechanism
-                VqTesting  = v_calc;
-                rc1.SetpointValue = 0.0f;
+                //v_calc=0.0f;//protection mechanism(deprecated)
+                VqTesting  = 0.0f;//Force-reset to 0.0f
+                //rc1.SetpointValue = 0.0f;//(Removed because the motor flag has stopped, so it will be reset at the same time)
                 rg1.Freq   = 0.0f;
                 runMotor   = MOTOR_STOP;
                 enableFlag = 0;   // Turn off the power last.
