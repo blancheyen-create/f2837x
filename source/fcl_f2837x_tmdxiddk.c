@@ -113,8 +113,8 @@ HALL_Handle    hallHandle;     // HALL module control handle
 HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
-float32 V_f_Ratio = 1.5f; // Add V/f definition at the beginning of the main file
-float32 V_offset  = 0.001254f;     // Provide a small initial thrust.
+float32 V_f_Ratio = 1.315f; // Add V/f definition at the beginning of the main file
+float32 V_offset  = 0.0005f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
 // Define struct type first (paste right before main)
@@ -1238,7 +1238,7 @@ void main(void)
                EDIS;
                clearTripFlagDMC = 1;
                //run_mode=1;
-               speedRef = 0.1258f;
+               speedRef = 0.1443f;
                rc1.TargetValue = speedRef;//(Removed because the LV1-specific function has been declared.)
                //rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.(Remove this out; if you switch quickly, it will climb directly from the "residual speed" for a smoother transition.)
                rc1.RampDelayMax = 100; // --- Manually add delay to slow accel
@@ -1254,9 +1254,9 @@ void main(void)
             else if(v_calc < 0.0f) v_calc=0.0f;//protection mechanism
             VqTesting = v_calc; // Give a specific starting voltage by temporary value
             IqRef = rc1.SetpointValue;    // By the way, update IqRef
-         }
-         else // Switch OFF: Stop immediately
-         {
+        }
+        else // Switch OFF: Stop immediately
+        {
             speedRef = 0.0f; // to allow ramp-down calculation
             //rc1.TargetValue = 0.0f;//(removed)
             if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
@@ -1281,8 +1281,7 @@ void main(void)
                 runMotor   = MOTOR_STOP;
                 enableFlag = 0;   // Turn off the power last.
             }
-
-         }
+        }
         //===========================================================
         // State machine entry & exit point
         //===========================================================
