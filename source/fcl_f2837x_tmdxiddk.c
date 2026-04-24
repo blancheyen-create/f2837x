@@ -113,7 +113,7 @@ HALL_Handle    hallHandle;     // HALL module control handle
 HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
-float32 V_f_Ratio = 1.315f; // Add V/f definition at the beginning of the main file
+float32 V_f_Ratio = 1.309f; // Add V/f definition at the beginning of the main file
 float32 V_offset  = 0.0005f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
@@ -1238,10 +1238,10 @@ void main(void)
                EDIS;
                clearTripFlagDMC = 1;
                //run_mode=1;
-               speedRef = 0.1443f;
+               speedRef = 0.145f;
                rc1.TargetValue = speedRef;//(Removed because the LV1-specific function has been declared.)
                //rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.(Remove this out; if you switch quickly, it will climb directly from the "residual speed" for a smoother transition.)
-               rc1.RampDelayMax = 100; // --- Manually add delay to slow accel
+               rc1.RampDelayMax = 90; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
                if(!enableFlag) enableFlag = 1; // Turn on the power(Some additions; adjustment should be only necessary if the software control flag has been cleared.)
             }
