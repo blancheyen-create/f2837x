@@ -113,8 +113,8 @@ HALL_Handle    hallHandle;     // HALL module control handle
 HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
-float32 V_f_Ratio = 1.309f; // Add V/f definition at the beginning of the main file
-float32 V_offset  = 0.0005f;     // Provide a small initial thrust.
+float32 V_f_Ratio = 1.308f; // Add V/f definition at the beginning of the main file
+float32 V_offset  = 0.00071f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
 // Define struct type first (paste right before main)
@@ -1237,17 +1237,18 @@ void main(void)
                EPwm1Regs.TZCLR.all = 0x00FF;
                EDIS;
                clearTripFlagDMC = 1;
-               //run_mode=1;
                speedRef = 0.145f;
                rc1.TargetValue = speedRef;//(Removed because the LV1-specific function has been declared.)
-               //rc1.SetpointValue = 0.0f; // Ensure the motor starts from 0.(Remove this out; if you switch quickly, it will climb directly from the "residual speed" for a smoother transition.)
-               rc1.RampDelayMax = 90; // --- Manually add delay to slow accel
+               rc1.RampDelayMax = 5; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
                if(!enableFlag) enableFlag = 1; // Turn on the power(Some additions; adjustment should be only necessary if the software control flag has been cleared.)
             }
 
             // During operation: Directly apply a frequency and a fixed voltage (without considering dynamic V/f initially to eliminate the possibility of fluctuations).
-            if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
+            if ( rc1.SetpointValue <= 0.12f)  rc1.RampDelayMax = 5; // Early stage of startup (new)
+            else if ( rc1.SetpointValue > 0.12f && rc1.SetpointValue < 0.14f)  rc1.RampDelayMax =10; // Mid-stage of startup (new)
+            else  rc1.RampDelayMax = 50; // Later stage of startup (new)
+            //if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.(Removed,previously enforced to avoid calculation errors)
             rg1.Freq = rc1.SetpointValue;
             v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
             if(v_calc > 0.4f) v_calc=0.4f;//protection mechanism
@@ -1258,25 +1259,21 @@ void main(void)
         else // Switch OFF: Stop immediately
         {
             speedRef = 0.0f; // to allow ramp-down calculation
-            //rc1.TargetValue = 0.0f;//(removed)
-            if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.
+            //if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.(Removed,previously enforced to avoid calculation errors)
             v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
-            //run_mode=0;
-            //if(v_calc > 0.02f)(deprecated)
-            //{
-            //}
             if(v_calc > 0.4f) v_calc=0.4f;//(Promoted)
             if(rc1.SetpointValue > 0.005f)//We've switched to using rc1.SetpointValue for the determination and simultaneously lowered the lower bound (new)
             {
+                if ( rc1.SetpointValue >= 0.14f)  rc1.RampDelayMax = 250; // Early stage of stop (new)
+                else if ( rc1.SetpointValue >= 0.13f && rc1.SetpointValue < 0.14f)  rc1.RampDelayMax =100; // Mid-stage of stop (new)
+                else rc1.RampDelayMax = 5; // Later stage of stop (new)
                 VqTesting  = v_calc;//(relocated)
                 rg1.Freq = rc1.SetpointValue;//(relocated)
                 IqRef = rc1.SetpointValue;    //Display the value synchronously//(relocated)
             }
             else
             {
-                //v_calc=0.0f;//protection mechanism(deprecated)
                 VqTesting  = 0.0f;//Force-reset to 0.0f
-                //rc1.SetpointValue = 0.0f;//(Removed because the motor flag has stopped, so it will be reset at the same time)
                 rg1.Freq   = 0.0f;
                 runMotor   = MOTOR_STOP;
                 enableFlag = 0;   // Turn off the power last.
