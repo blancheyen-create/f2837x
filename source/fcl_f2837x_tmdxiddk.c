@@ -113,8 +113,8 @@ HALL_Handle    hallHandle;     // HALL module control handle
 HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
-float32 V_f_Ratio = 1.308f; // Add V/f definition at the beginning of the main file
-float32 V_offset  = 0.00071f;     // Provide a small initial thrust.
+float32 V_f_Ratio = 1.28f; // Add V/f definition at the beginning of the main file
+float32 V_offset  = 0.0035008f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
 // Define struct type first (paste right before main)
@@ -381,7 +381,7 @@ float32_t maxModIndex = 0;             // max modulation index
 // ****************************************************************************
 float32_t T = 0.001f / ISR_FREQUENCY;  // Samping period (sec), see parameter.h
 float32_t VdTesting = 0.0f;          // Vd reference (pu)
-float32_t VqTesting = 0.0f;         // Vq reference (pu)(0.1зя0)
+float32_t VqTesting = 0.0f;         // Vq reference (pu)(0.1>>0)
 float32_t IdRef     = 0.0f;          // Id reference (pu)
 float32_t tempIdRef = 0.0f;          // tempId reference (pu)
 float32_t IqRef     = 0.0f;          // Iq reference (pu)
@@ -1237,7 +1237,7 @@ void main(void)
                EPwm1Regs.TZCLR.all = 0x00FF;
                EDIS;
                clearTripFlagDMC = 1;
-               speedRef = 0.145f;
+               speedRef = 0.146015f;
                rc1.TargetValue = speedRef;//(Removed because the LV1-specific function has been declared.)
                rc1.RampDelayMax = 5; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
@@ -1246,8 +1246,10 @@ void main(void)
 
             // During operation: Directly apply a frequency and a fixed voltage (without considering dynamic V/f initially to eliminate the possibility of fluctuations).
             if ( rc1.SetpointValue <= 0.12f)  rc1.RampDelayMax = 5; // Early stage of startup (new)
-            else if ( rc1.SetpointValue > 0.12f && rc1.SetpointValue < 0.14f)  rc1.RampDelayMax =10; // Mid-stage of startup (new)
-            else  rc1.RampDelayMax = 50; // Later stage of startup (new)
+            else if ( rc1.SetpointValue > 0.12f && rc1.SetpointValue < 0.1357f)  rc1.RampDelayMax =50; // Mid-stage of startup A(new)(modified)
+            else if ( rc1.SetpointValue >= 0.135f && rc1.SetpointValue < 0.14f)  rc1.RampDelayMax = 100; // Mid-stage of startup B(new)
+            else if ( rc1.SetpointValue >= 0.14f && rc1.SetpointValue < 0.145f)  rc1.RampDelayMax = 150; // Mid-stage of startup C(new)
+            else  rc1.RampDelayMax = 200; // Later stage of startup (new)(modified)
             //if (rc1.RampDelayMax < 1)  rc1.RampDelayMax = 1; // To prevent calculation errors, a minimum value of 1 is forcibly set.(Removed,previously enforced to avoid calculation errors)
             rg1.Freq = rc1.SetpointValue;
             v_calc= (rc1.SetpointValue * V_f_Ratio) + V_offset;//Voltage
