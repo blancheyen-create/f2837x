@@ -113,7 +113,7 @@ HALL_Handle    hallHandle;     // HALL module control handle
 HALL_Obj       hallObj;        // Object for storing actual data
 float32_t hallAngleBuf[6] = {0.1667f, 0.3333f, 0.5f, 0.6667f, 0.8333f, 1.0f};// For lookup table
 USER_Params gUserParams;
-float32 V_f_Ratio = 1.28f; // Add V/f definition at the beginning of the main file
+float32 V_f_Ratio = 1.271f; // Add V/f definition at the beginning of the main file
 float32 V_offset  = 0.0035008f;     // Provide a small initial thrust.
 volatile uint16_t run_mode = false;//Operation mode determination (new)
 // Define motor control variable struct
@@ -1237,7 +1237,7 @@ void main(void)
                EPwm1Regs.TZCLR.all = 0x00FF;
                EDIS;
                clearTripFlagDMC = 1;
-               speedRef = 0.146015f;
+               speedRef = 0.147f;
                rc1.TargetValue = speedRef;//(Removed because the LV1-specific function has been declared.)
                rc1.RampDelayMax = 5; // --- Manually add delay to slow accel
                runMotor = MOTOR_RUN;
